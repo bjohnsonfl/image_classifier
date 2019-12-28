@@ -77,7 +77,6 @@ class Layer:
     step_Size = 0.1 # initial value in case you forget to set it
 
     def __init__(self, in_size, out_size, num_Of_Examples):
-        print("in class")
         self.num_Of_Input = num_Of_Examples
         self.W = np.random.randn(in_size, out_size)
         self.B = np.random.randn(out_size, 1)
@@ -107,7 +106,12 @@ class Layer:
 
     def feedback(self, W_Next, dZ_Next):
         # Gradient Decent Single Iteration
-        # dZ        dz1 = (W2.T * dz2) .* g1'(z1) where g(z) is activation func
+        # sigmoid derivative is g(z)(1-g(z)) where g(z) is the sigmoid function
+        # dZ        dz1 = (W2 * dz2) .* g1'(z1) where g(z) is activation func
+        # w2(szLay x szOut)  dz2 (out x numExam)
+
+        self.dZ = np.dot(W_Next, dZ_Next) * np.multiply(self.A, (1 - self.A)) #not sure if this is correct
+
         dW = (1 / self.num_Of_Examples) * np.dot(self.X, self.dZ.T)  # each column are for each additional neuron in the layer
         dB = (1 / self.num_Of_Examples) * np.sum(self.dZ, axis=1, keepdims=True)
 
@@ -116,7 +120,6 @@ class Layer:
 
 class OutputLayer(Layer):
     def __init__(self, in_size, out_size, num_Of_Examples, Y):
-        print("in subclass")
         super().__init__ (in_size, out_size, num_Of_Examples)
         self.Y = Y
         self.Jsum = np.zeros((out_size, 1))
@@ -132,7 +135,7 @@ class OutputLayer(Layer):
         # i x j  matrix where i is number of outputs and j are examples
         J = -(self.Y * np.log(self.A) + ((1 - self.Y) * np.log(1 - self.A)))
         J = np.sum(J, axis=1, keepdims=True) / self.num_Of_Input
-        self.Jsum = J.T  # Make the output vertical
+        self.Jsum = J
 
     def feedback(self):
         # Gradient Decent Single Iteration
@@ -156,21 +159,30 @@ def main():
     num_Of_Input = 3  # number of images
     out_size = 2  # size of output
     step_Size = 0.1  # learning rate
-    iter = 100  # iterations of gradient decent
+    iter = 1  # iterations of gradient decent
 
     X = np.random.randint(0, 2, (in_size, num_Of_Input))  # input layer, tested with random int 0 to 1 for grayscale
     Y = np.random.rand(out_size, num_Of_Input)  # output_layer_truths where rows are outputs and col are examples
 
 
+    layerTest1 = Layer(in_size, 10, num_Of_Input)
+    outputTest1 = OutputLayer(10,out_size,num_Of_Input, Y)
 
     outputTest = OutputLayer(in_size, out_size, num_Of_Input, Y)
     outputTest.step_Size = 0.1
 
     for _ in range(0, iter):
-        outputTest.forward(X)
-        outputTest.feedback()
-        outputTest.print_Cost()
 
+        # outputTest.forward(X)
+        # outputTest.feedback()
+        # outputTest.print_Cost()
+
+        layerTest1.forward(X)
+        outputTest1.forward(layerTest1.A)
+
+        outputTest1.feedback()
+        layerTest1.feedback(outputTest1.W, outputTest1.dZ)
+        outputTest1.print_Cost()
 
 
 
