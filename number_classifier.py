@@ -78,7 +78,7 @@ class Layer:
 
     # in_size are the number of neurons from prev layer, out_size is number of neurons in this layer
     def __init__(self, in_size, out_size, num_Of_Examples):
-        self.num_Of_Input = num_Of_Examples
+        # self.num_Of_Input = num_Of_Examples
         self.W = np.random.randn(in_size, out_size)
         self.B = np.random.randn(out_size, 1)
         # A and dZ need to be returnable for feed forward and feedback
@@ -135,7 +135,7 @@ class OutputLayer(Layer):
         # Loss/Cost Function
         # i x j  matrix where i is number of outputs and j are examples
         J = -(self.Y * np.log(self.A) + ((1 - self.Y) * np.log(1 - self.A)))
-        J = np.sum(J, axis=1, keepdims=True) / self.num_Of_Input
+        J = np.sum(J, axis=1, keepdims=True) / self.num_Of_Examples
         self.Jsum = J
 
     def feedback(self):
@@ -153,6 +153,7 @@ class OutputLayer(Layer):
         print(self.Jsum)
 
 
+# TODO: to have variable amounts of examples . A Z and Y need to reflect those
 class Model:
 
     def __init__(self, layerModel, num_Of_Input):
@@ -215,6 +216,10 @@ class Model:
 
         self.layers[self.num_Of_Layers -1].print_Cost()
 
+    def train(self, iter, X):
+        for _ in range (0, iter):
+            self.feedForward(X)
+            self.feedBack()
 
 
 def main():
@@ -222,14 +227,14 @@ def main():
 
     in_size = 32  # length * width of image, but 1 for now
     num_Of_Input = 1000  # number of images
-    out_size = 4  # size of output
+    out_size = 2  # size of output
     step_Size = 0.1  # learning rate
     iter = 100  # iterations of gradient decent
 
     X = np.random.randint(0, 2, (in_size, num_Of_Input))  # input layer, tested with random int 0 to 1 for grayscale
     Y = np.random.rand(out_size, num_Of_Input)  # output_layer_truths where rows are outputs and col are examples
 
-
+    """
     layerTest10 = Layer(in_size, 10, num_Of_Input)
     layerTest11 = Layer(10, 10, num_Of_Input)
     layerTest12 = Layer(10, 10, num_Of_Input)
@@ -237,32 +242,12 @@ def main():
 
     outputTest = OutputLayer(in_size, out_size, num_Of_Input, Y)
     outputTest.step_Size = 0.1
+    """
 
     layers = [in_size, 10, 10, out_size]
     model = Model(layers, num_Of_Input)
     model.generateLayers(Y)
-
-    for _ in range(0, iter):
-
-        # outputTest.forward(X)
-        # outputTest.feedback()
-        # outputTest.print_Cost()
-        """
-        layerTest10.forward(X)
-        layerTest11.forward(layerTest10.A)
-        layerTest12.forward(layerTest11.A)
-        outputTest1.forward(layerTest12.A)
-
-        outputTest1.feedback()
-        layerTest12.feedback(outputTest1.W, outputTest1.dZ)
-        layerTest11.feedback(layerTest12.W, layerTest12.dZ)
-        layerTest10.feedback(layerTest11.W, layerTest11.dZ)
-
-
-        outputTest1.print_Cost()
-        """
-        model.feedForward(X)
-        model.feedBack()
+    model.train(iter, X)
 
 
 if __name__ == '__main__':
