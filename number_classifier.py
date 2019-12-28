@@ -153,19 +153,21 @@ class OutputLayer(Layer):
 
 
 def main():
-    logReg()
+    #logReg()
 
-    in_size = 5  # length * width of image, but 1 for now
-    num_Of_Input = 3  # number of images
-    out_size = 2  # size of output
+    in_size = 32  # length * width of image, but 1 for now
+    num_Of_Input = 1000  # number of images
+    out_size = 4  # size of output
     step_Size = 0.1  # learning rate
-    iter = 1  # iterations of gradient decent
+    iter = 100  # iterations of gradient decent
 
     X = np.random.randint(0, 2, (in_size, num_Of_Input))  # input layer, tested with random int 0 to 1 for grayscale
     Y = np.random.rand(out_size, num_Of_Input)  # output_layer_truths where rows are outputs and col are examples
 
 
-    layerTest1 = Layer(in_size, 10, num_Of_Input)
+    layerTest10 = Layer(in_size, 10, num_Of_Input)
+    layerTest11 = Layer(10, 10, num_Of_Input)
+    layerTest12 = Layer(10, 10, num_Of_Input)
     outputTest1 = OutputLayer(10,out_size,num_Of_Input, Y)
 
     outputTest = OutputLayer(in_size, out_size, num_Of_Input, Y)
@@ -177,11 +179,17 @@ def main():
         # outputTest.feedback()
         # outputTest.print_Cost()
 
-        layerTest1.forward(X)
-        outputTest1.forward(layerTest1.A)
+        layerTest10.forward(X)
+        layerTest11.forward(layerTest10.A)
+        layerTest12.forward(layerTest11.A)
+        outputTest1.forward(layerTest12.A)
 
         outputTest1.feedback()
-        layerTest1.feedback(outputTest1.W, outputTest1.dZ)
+        layerTest12.feedback(outputTest1.W, outputTest1.dZ)
+        layerTest11.feedback(layerTest12.W, layerTest12.dZ)
+        layerTest10.feedback(layerTest11.W, layerTest11.dZ)
+
+
         outputTest1.print_Cost()
 
 
