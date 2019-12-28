@@ -76,6 +76,7 @@ class Layer:
     """
     step_Size = 0.1 # initial value in case you forget to set it
 
+    # in_size are the number of neurons from prev layer, out_size is number of neurons in this layer
     def __init__(self, in_size, out_size, num_Of_Examples):
         self.num_Of_Input = num_Of_Examples
         self.W = np.random.randn(in_size, out_size)
@@ -152,6 +153,70 @@ class OutputLayer(Layer):
         print(self.Jsum)
 
 
+class Model:
+
+    def __init__(self, layerModel, num_Of_Input):
+        self.layerModel = layerModel
+        self.num_Of_Input = num_Of_Input
+        self.layers = []
+        self.num_Of_Layers = 0
+
+
+    """
+    the layer model contains the size of each layer.
+    The first number dictates the size of the input layer. 
+    The last number is the output layer.
+    If there are numbers remaining, those are the sizes of the hidden layers 
+    [n0 out]
+    [n0 n1 n2 out]
+    """
+    def generateLayers(self, Y):
+        print(self.layerModel)
+        self.num_Of_Layers = len(self.layerModel) - 1 # input layer does not count
+        iter = 1
+
+        # append each layer. the - 1 above excludes the output layer
+        while iter != self.num_Of_Layers:
+            layer = Layer(self.layerModel[iter - 1], self.layerModel[iter], self.num_Of_Input)
+            self.layers.append(layer)
+            iter += 1
+
+        # add the output layer. Bad idea to require data Y while creating the model
+        layer = OutputLayer(self.layerModel[iter - 1], self.layerModel[iter], self.num_Of_Input, Y)
+        self.layers.append(layer)
+
+    def feedForward(self, X):
+        """
+        layerTest10.forward(X)
+        layerTest11.forward(layerTest10.A)
+        layerTest12.forward(layerTest11.A)
+        outputTest1.forward(layerTest12.A)
+        """
+        iter = 1
+        self.layers[0].forward(X)
+        while iter != self.num_Of_Layers:
+            self.layers[iter].forward(self.layers[iter - 1].A)
+            iter += 1
+
+    def feedBack(self):
+        """
+        outputTest1.feedback()
+        layerTest12.feedback(outputTest1.W, outputTest1.dZ)
+        layerTest11.feedback(layerTest12.W, layerTest12.dZ)
+        layerTest10.feedback(layerTest11.W, layerTest11.dZ)
+        """
+        iter = self.num_Of_Layers - 1
+        self.layers[iter].feedback()
+
+        iter -= 1
+        while iter >= 0:
+            self.layers[iter].feedback(self.layers[iter + 1].W, self.layers[iter + 1].dZ)
+            iter -= 1
+
+        self.layers[self.num_Of_Layers -1].print_Cost()
+
+
+
 def main():
     #logReg()
 
@@ -173,12 +238,16 @@ def main():
     outputTest = OutputLayer(in_size, out_size, num_Of_Input, Y)
     outputTest.step_Size = 0.1
 
+    layers = [in_size, 10, 10, out_size]
+    model = Model(layers, num_Of_Input)
+    model.generateLayers(Y)
+
     for _ in range(0, iter):
 
         # outputTest.forward(X)
         # outputTest.feedback()
         # outputTest.print_Cost()
-
+        """
         layerTest10.forward(X)
         layerTest11.forward(layerTest10.A)
         layerTest12.forward(layerTest11.A)
@@ -191,7 +260,9 @@ def main():
 
 
         outputTest1.print_Cost()
-
+        """
+        model.feedForward(X)
+        model.feedBack()
 
 
 if __name__ == '__main__':
