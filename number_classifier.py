@@ -93,7 +93,7 @@ class OutputLayer(Layer):
         # This is only for the last layer
         # Loss/Cost Function
         # i x j  matrix where i is number of outputs and j are examples
-        J = -(Y * np.log(self.A) + ((1 - Y) * np.log(1 - self.A)))
+        J = -(self.Y * np.log(self.A) + ((1 - self.Y) * np.log(1 - self.A)))
         J = np.sum(J, axis=1, keepdims=True) / self.num_Of_Input
         self.Jsum = J.T  # Make the output vertical
 
