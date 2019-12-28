@@ -10,7 +10,7 @@ def main():
     num_Of_Input = 2 # number of images
     out_size = 2  # size of output
     step_Size = 0.1 # learning rate
-
+    iter = 100 # iterations of gradient decent
 
 
     X = np.random.randint(0, 2, (in_size, num_Of_Input))  # input layer, tested with random int 0 to 1 for grayscale
@@ -23,33 +23,35 @@ def main():
     print("W: \n", W, "\n")
     print("B: \n", B, "\n")
     print("Y: \n", Y, "\n")
-    #vectorized feedforward. W transpose weights * X training examples + B
-    Z = np.dot(W.T, X) + B
 
-    A = 1 / (1 + np.exp(-Z))
-    print("A: \n", A)
+    for _ in range(0,iter):
+        #vectorized feedforward. W transpose weights * X training examples + B
+        Z = np.dot(W.T, X) + B
 
-    # Loss/Cost Function
-    #i x j  matrix where i is number of outputs and j are examples
-    J = -(Y * np.log(A) + ((1 - Y) * np.log(1-A)))
-    print("J: \n", J, "\n")
-    J = np.sum(J, axis=1, keepdims=True) / num_Of_Input
-    # J = J.T # Make the output vertical
-    print("J: \n", J, "\n")
+        A = 1 / (1 + np.exp(-Z))
+        #print("A: \n", A)
 
-    # Gradient Decent Single Iteration
-    dZ = A - Y
-    print("dZ: \n", dZ, "\n")
-    dW = (1/num_Of_Input) * np.dot(X, dZ.T) # each column are for each additional neuron in the layer
-    print("dW: \n", dW, "\n")
-    dB = (1/num_Of_Input) * np.sum(dZ, axis=1, keepdims=True)
-    print("dB: \n", dB, "\n")
+        # Loss/Cost Function
+        #i x j  matrix where i is number of outputs and j are examples
+        J = -(Y * np.log(A) + ((1 - Y) * np.log(1-A)))
+        #print("J: \n", J, "\n")
+        J = np.sum(J, axis=1, keepdims=True) / num_Of_Input
+        # J = J.T # Make the output vertical
+        print("J: \n", J, "\n")
 
-    W = W - step_Size*dW
-    print("W: \n", W, "\n")
+        # Gradient Decent Single Iteration
+        dZ = A - Y
+        #print("dZ: \n", dZ, "\n")
+        dW = (1/num_Of_Input) * np.dot(X, dZ.T) # each column are for each additional neuron in the layer
+        #print("dW: \n", dW, "\n")
+        dB = (1/num_Of_Input) * np.sum(dZ, axis=1, keepdims=True)
+        #print("dB: \n", dB, "\n")
 
-    B = B - step_Size*dB
-    print("B: \n", B, "\n")
+        W = W - step_Size*dW
+        #print("W: \n", W, "\n")
+
+        B = B - step_Size*dB
+        #print("B: \n", B, "\n")
 
 
 if __name__ == '__main__':
