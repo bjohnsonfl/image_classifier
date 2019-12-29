@@ -3,7 +3,7 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-
+import data_parser
 
 def logReg():
     in_size = 5  # length * width of image, but 1 for now
@@ -249,6 +249,8 @@ def main():
     model.generateLayers(Y)
     model.train(iter, X)
 
+    train_images_stack, train_labels_stack, test_images_stack, test_labels_stack = data_parser.parse_data()
+    print(np.shape(test_labels_stack))
 
 if __name__ == '__main__':
     main()

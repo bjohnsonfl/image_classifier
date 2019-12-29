@@ -78,7 +78,6 @@ def parse_data():
         num = test_labels[i]
         test_labels_stack[i, num] = 1
 
-    return train_images_stack, train_labels_stack, test_images_stack, test_labels_stack
+    return train_images_stack.T, train_labels_stack.T, test_images_stack.T, test_labels_stack.T
 
 
-parse_data()
