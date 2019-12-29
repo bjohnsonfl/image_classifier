@@ -164,8 +164,18 @@ class OutputLayer(Layer):
         # for each column (size 10) in A, ie example, there will be different confident levels.
         # the max correlates to the number in the image which is to be compared to Y
 
+        print(self.A[:, 0:15])
+        print(self.Y[:, 0:15])
         maxImg = np.argmax(self.A, axis=0)
         maxLabel = np.argmax(self.Y, axis= 0)
+
+        Alite = self.A[:, 0:15]
+        Ylite = self.Y[:, 0:15]
+        maxImgLite = np.argmax(Alite, axis=0)
+        maxLabelLite = np.argmax(Ylite, axis=0)
+        print(maxImgLite)
+        print(maxLabelLite)
+        print(maxImg - maxLabel)
 
         diff = maxImg - maxLabel
         correct = self.num_Of_Examples - np.count_nonzero(diff)
@@ -201,6 +211,7 @@ class Model:
         print(self.layerModel)
         self.num_Of_Layers = len(self.layerModel) - 1 # input layer does not count
         iter = 1
+        self.Y = Y
 
         # append each layer. the - 1 above excludes the output layer
         while iter != self.num_Of_Layers:
@@ -247,8 +258,29 @@ class Model:
             self.feedForward(X)
             self.feedBack()
 
+
+    # for now, just make batch size even interval of num of inputs
+    def batch_train(self, iter, X, batchSize, numOfInputs):
+        # for batch, we need to update the input size and Y to correspond with each batch
+
+        outLayer = self.num_Of_Layers - 1
+        numOfBatches = numOfInputs / batchSize
+
+        offset = 0
+
+        for i in range (0, int(numOfBatches)):
+            self.layers[outLayer].update_Y(self.Y[:, offset : offset + batchSize])
+
+            for _ in range(0, iter):
+                self.feedForward(X[:, offset : offset + batchSize])
+                self.feedBack()
+            offset += batchSize
+            self.print_cost()
+
+
+
     def test(self, X, Y):
-        #update Y for output laye
+        #update Y for output layer
         outLayer = self.num_Of_Layers-1
         self.layers[outLayer].update_Y(Y)
 
@@ -303,7 +335,8 @@ def main():
     layers = [784, 20, 20, 10]
     model = Model(layers, 60000)
     model.generateLayers(train_labels_stack)
-    model.train(100, train_images_stack)
+    #model.train(100, train_images_stack)
+    model.batch_train(100, train_images_stack, 1000, 60000)
     model.print_cost()
 
     model.update_num_Of_Input(10000)
