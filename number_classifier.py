@@ -79,12 +79,18 @@ class Layer:
     # in_size are the number of neurons from prev layer, out_size is number of neurons in this layer
     def __init__(self, in_size, out_size, num_Of_Examples):
         # self.num_Of_Input = num_Of_Examples
+        self.out_size = out_size
         self.W = np.random.randn(in_size, out_size)
         self.B = np.random.randn(out_size, 1)
         # A and dZ need to be returnable for feed forward and feedback
         self.A = np.zeros((out_size, num_Of_Examples))
         self.dZ = np.zeros((out_size, num_Of_Examples))
         self.num_Of_Examples = num_Of_Examples
+
+    def update_num_Of_Input(self, num_Of_Examples):
+        self.num_Of_Examples = num_Of_Examples
+        self.A = np.zeros((self.out_size, self.num_Of_Examples))
+        self.dZ = np.zeros((self.out_size, self.num_Of_Examples))
 
     # use a property maybe? this function sets all instances with the same step size
     def setStepSize(self, size):
@@ -125,6 +131,9 @@ class OutputLayer(Layer):
         self.Y = Y
         self.Jsum = np.zeros((out_size, 1))
 
+    def update_Y(self, Y):
+        self.Y = Y
+
     def forward(self, X):
         # vectorized feedforward. W transpose weights * X training examples + B
         self.X = X
@@ -148,9 +157,26 @@ class OutputLayer(Layer):
         self.W -= self.step_Size * dW
         self.B -= self.step_Size * dB
 
+    def binary_classification(self, X):
+
+        self.forward(X)
+        self.print_Cost()
+        # for each column (size 10) in A, ie example, there will be different confident levels.
+        # the max correlates to the number in the image which is to be compared to Y
+
+        maxImg = np.argmax(self.A, axis=0)
+        maxLabel = np.argmax(self.Y, axis= 0)
+
+        diff = maxImg - maxLabel
+        correct = self.num_Of_Examples - np.count_nonzero(diff)
+        print("Correct: ", correct)
+        print("Percentage: ", (correct/self.num_Of_Examples)*100)
+
+
+
     # property?
     def print_Cost(self):
-        print(self.Jsum)
+        print("Cost: ", self.Jsum)
 
 
 # TODO: to have variable amounts of examples . A Z and Y need to reflect those
@@ -214,14 +240,36 @@ class Model:
             self.layers[iter].feedback(self.layers[iter + 1].W, self.layers[iter + 1].dZ)
             iter -= 1
 
-        self.layers[self.num_Of_Layers -1].print_Cost()
+        # self.layers[self.num_Of_Layers -1].print_Cost()
 
     def train(self, iter, X):
         for _ in range (0, iter):
             self.feedForward(X)
             self.feedBack()
 
+    def test(self, X, Y):
+        #update Y for output laye
+        outLayer = self.num_Of_Layers-1
+        self.layers[outLayer].update_Y(Y)
 
+        iter = 1
+        self.layers[0].forward(X)
+        while iter != self.num_Of_Layers - 1:
+            self.layers[iter].forward(self.layers[iter - 1].A)
+            iter += 1
+
+        self.layers[outLayer].binary_classification(self.layers[outLayer - 1].A)
+
+
+
+    def update_num_Of_Input(self, num):
+        for i in range (0, self.num_Of_Layers):
+            self.layers[i].update_num_Of_Input(num)
+        #update Y in output layer in test or train
+
+
+    def print_cost(self):
+        self.layers[self.num_Of_Layers - 1].print_Cost()
 def main():
     #logReg()
 
@@ -242,15 +290,25 @@ def main():
 
     outputTest = OutputLayer(in_size, out_size, num_Of_Input, Y)
     outputTest.step_Size = 0.1
-    """
+    
 
     layers = [in_size, 10, 10, out_size]
     model = Model(layers, num_Of_Input)
     model.generateLayers(Y)
     model.train(iter, X)
+    
+    """
 
     train_images_stack, train_labels_stack, test_images_stack, test_labels_stack = data_parser.parse_data()
-    print(np.shape(test_labels_stack))
+    layers = [784, 20, 20, 10]
+    model = Model(layers, 60000)
+    model.generateLayers(train_labels_stack)
+    model.train(100, train_images_stack)
+    model.print_cost()
+
+    model.update_num_Of_Input(10000)
+    model.test(test_images_stack, test_labels_stack)
+
 
 if __name__ == '__main__':
     main()
