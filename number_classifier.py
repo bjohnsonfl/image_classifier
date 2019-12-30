@@ -74,14 +74,14 @@ class Layer:
 
             dZ dW and dB are the gradients of Z W and B which are used to with the learning rate to step to a min.
     """
-    step_Size = 0.1 # initial value in case you forget to set it
+    step_Size = 0.01 # initial value in case you forget to set it
 
     # in_size are the number of neurons from prev layer, out_size is number of neurons in this layer
     def __init__(self, in_size, out_size, num_Of_Examples):
         # self.num_Of_Input = num_Of_Examples
         self.out_size = out_size
-        self.W = np.random.randn(in_size, out_size)
-        self.B = np.random.randn(out_size, 1)
+        self.W = np.random.randn(in_size, out_size) * 0.01
+        self.B = np.zeros((out_size, 1))
         # A and dZ need to be returnable for feed forward and feedback
         self.A = np.zeros((out_size, num_Of_Examples))
         self.dZ = np.zeros((out_size, num_Of_Examples))
@@ -96,12 +96,19 @@ class Layer:
     def setStepSize(self, size):
         self.step_Size = size
 
+    def sigmoid(self, Z):
+        self.A = 1 / (1 + np.exp(-Z))
+    def relu(self, Z):
+        self.A = Z * (Z > 0)
+    def reul_prime(self, Z):
+        return np.where(Z > 0, 1.0, 0.0)
     def forward(self, X):
         # vectorized feedforward. W transpose weights * X training examples + B
         self.X = X
         Z = np.dot(self.W.T, self.X) + self.B
-        self.A = 1 / (1 + np.exp(-Z))
-
+       # self.A = 1 / (1 + np.exp(-Z))
+        #self.sigmoid(Z)
+        self.relu(Z)
         """ This is only for the last layer
         # Loss/Cost Function
         # i x j  matrix where i is number of outputs and j are examples
@@ -117,7 +124,9 @@ class Layer:
         # dZ        dz1 = (W2 * dz2) .* g1'(z1) where g(z) is activation func
         # w2(szLay x szOut)  dz2 (out x numExam)
 
-        self.dZ = np.dot(W_Next, dZ_Next) * np.multiply(self.A, (1 - self.A)) #not sure if this is correct
+        # self.dZ = np.dot(W_Next, dZ_Next) * np.multiply(self.A, (1 - self.A)) #not sure if this is correct
+        #  self.dZ = np.dot(W_Next, dZ_Next) * self.A * (1 - self.A)
+        self.dZ = np.dot(W_Next, dZ_Next) * self.reul_prime(self.A)
 
         dW = (1 / self.num_Of_Examples) * np.dot(self.X, self.dZ.T)  # each column are for each additional neuron in the layer
         dB = (1 / self.num_Of_Examples) * np.sum(self.dZ, axis=1, keepdims=True)
@@ -143,7 +152,8 @@ class OutputLayer(Layer):
         # This is only for the last layer
         # Loss/Cost Function
         # i x j  matrix where i is number of outputs and j are examples
-        J = -(self.Y * np.log(self.A) + ((1 - self.Y) * np.log(1 - self.A)))
+        epsilon = 1e-5
+        J = -(self.Y * np.log(self.A + epsilon) + ((1 - self.Y) * np.log(1 - self.A + epsilon)))
         J = np.sum(J, axis=1, keepdims=True) / self.num_Of_Examples
         self.Jsum = J
 
@@ -164,18 +174,17 @@ class OutputLayer(Layer):
         # for each column (size 10) in A, ie example, there will be different confident levels.
         # the max correlates to the number in the image which is to be compared to Y
 
-        print(self.A[:, 0:15])
-        print(self.Y[:, 0:15])
+
         maxImg = np.argmax(self.A, axis=0)
         maxLabel = np.argmax(self.Y, axis= 0)
 
-        Alite = self.A[:, 0:15]
-        Ylite = self.Y[:, 0:15]
-        maxImgLite = np.argmax(Alite, axis=0)
-        maxLabelLite = np.argmax(Ylite, axis=0)
-        print(maxImgLite)
-        print(maxLabelLite)
-        print(maxImg - maxLabel)
+        #Alite = self.A[:, 0:15]
+        #Ylite = self.Y[:, 0:15]
+        #maxImgLite = np.argmax(Alite, axis=0)
+        #maxLabelLite = np.argmax(Ylite, axis=0)
+        #print(maxImgLite)
+        #print(maxLabelLite)
+        #print(maxImg - maxLabel)
 
         diff = maxImg - maxLabel
         correct = self.num_Of_Examples - np.count_nonzero(diff)
@@ -223,6 +232,8 @@ class Model:
         layer = OutputLayer(self.layerModel[iter - 1], self.layerModel[iter], self.num_Of_Input, Y)
         self.layers.append(layer)
 
+        self.checkW = self.layers[0].W
+
     def feedForward(self, X):
         """
         layerTest10.forward(X)
@@ -268,16 +279,23 @@ class Model:
 
         offset = 0
 
-        for i in range (0, int(numOfBatches)):
+        for i in range(0, int(numOfBatches)):
             self.layers[outLayer].update_Y(self.Y[:, offset : offset + batchSize])
 
             for _ in range(0, iter):
-                self.feedForward(X[:, offset : offset + batchSize])
+                self.feedForward(X[:, offset : (offset + batchSize)])
                 self.feedBack()
+                # print(iter, self.print_cost())
             offset += batchSize
-            self.print_cost()
+            # self.print_cost()
+            if i % 10 == 0:
+                print(i)
+                self.print_cost()
 
-
+        afterW = self.layers[0].W
+        print(self.checkW[0, :])
+        print(afterW[0, :])
+       # if afterW.all(self.checkW) : print ("same")
 
     def test(self, X, Y):
         #update Y for output layer
@@ -286,12 +304,16 @@ class Model:
 
         iter = 1
         self.layers[0].forward(X)
-        while iter != self.num_Of_Layers - 1:
+        while iter < outLayer:
             self.layers[iter].forward(self.layers[iter - 1].A)
             iter += 1
 
-        self.layers[outLayer].binary_classification(self.layers[outLayer - 1].A)
-
+        # if there is only an output layer, do not try and use A from an hidden layer
+        print("numOfLayers: ", self.num_Of_Layers, outLayer - 1)
+        if self.num_Of_Layers > 1:
+            self.layers[outLayer].binary_classification(self.layers[outLayer - 1].A)
+        else:
+            self.layers[outLayer].binary_classification(X)
 
 
     def update_num_Of_Input(self, num):
@@ -308,39 +330,48 @@ def main():
     in_size = 32  # length * width of image, but 1 for now
     num_Of_Input = 1000  # number of images
     out_size = 2  # size of output
-    step_Size = 0.1  # learning rate
+    step_Size = 0.0001  # learning rate
     iter = 100  # iterations of gradient decent
-
+    norm = 0.99/255
+    normBias = 0.01
     X = np.random.randint(0, 2, (in_size, num_Of_Input))  # input layer, tested with random int 0 to 1 for grayscale
     Y = np.random.rand(out_size, num_Of_Input)  # output_layer_truths where rows are outputs and col are examples
 
-    """
-    layerTest10 = Layer(in_size, 10, num_Of_Input)
-    layerTest11 = Layer(10, 10, num_Of_Input)
-    layerTest12 = Layer(10, 10, num_Of_Input)
-    outputTest1 = OutputLayer(10,out_size,num_Of_Input, Y)
 
-    outputTest = OutputLayer(in_size, out_size, num_Of_Input, Y)
-    outputTest.step_Size = 0.1
-    
-
-    layers = [in_size, 10, 10, out_size]
-    model = Model(layers, num_Of_Input)
-    model.generateLayers(Y)
-    model.train(iter, X)
-    
-    """
-
-    train_images_stack, train_labels_stack, test_images_stack, test_labels_stack = data_parser.parse_data()
-    layers = [784, 20, 20, 10]
-    model = Model(layers, 60000)
-    model.generateLayers(train_labels_stack)
-    #model.train(100, train_images_stack)
-    model.batch_train(100, train_images_stack, 1000, 60000)
+    train_images_stack, train_labels_stack, test_images_stack, test_labels_stack = data_parser.parse_data(norm, normBias)
+    layers = [784, 16, 10]
+    trainSize = 50000 # max 60000
+    testSize = 10000 # max 10000
+    model = Model(layers, trainSize)
+    #[:, 0:trainSize]
+    model.generateLayers(train_labels_stack[:, 0:trainSize])
+    # model.train(100, train_images_stack)  # Todo: the 10 vs 100 caused an error
+    model.batch_train(512, train_images_stack[:, 0:trainSize], 100, trainSize)
     model.print_cost()
 
-    model.update_num_Of_Input(10000)
-    model.test(test_images_stack, test_labels_stack)
+    model.update_num_Of_Input(testSize)
+    model.test(test_images_stack[:, 0:testSize], test_labels_stack[:, 0:testSize])
+
+
+    model.feedForward(test_images_stack)
+    model.print_cost()
+
+    """
+        layerTest10 = Layer(in_size, 10, num_Of_Input)
+        layerTest11 = Layer(10, 10, num_Of_Input)
+        layerTest12 = Layer(10, 10, num_Of_Input)
+        outputTest1 = OutputLayer(10,out_size,num_Of_Input, Y)
+
+        outputTest = OutputLayer(in_size, out_size, num_Of_Input, Y)
+        outputTest.step_Size = 0.1
+
+
+        layers = [in_size, 10, 10, out_size]
+        model = Model(layers, num_Of_Input)
+        model.generateLayers(Y)
+        model.train(iter, X)
+
+    """
 
 
 if __name__ == '__main__':

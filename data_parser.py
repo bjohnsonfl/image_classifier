@@ -7,11 +7,12 @@ from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 
+
 import tensorflow_datasets as tfds
+import matplotlib.pyplot as plt
 
 
-
-def parse_data():
+def parse_data(norm, normBias):
 
     # train_ds = tfds.load("mnist", split=tfds.Split.TRAIN, batch_size=-1)
     train_ds, test_ds = tfds.load('mnist:3.*.*', split=['train', 'test'], batch_size=-1)
@@ -19,8 +20,10 @@ def parse_data():
     test = tfds.as_numpy(test_ds)
     # numpy_images, numpy_labels = numpy_ds["image"], numpy_ds["label"]
 
-    train_images, train_labels = train["image"], train["label"]
-    test_images, test_labels = test["image"], test["label"]
+    train_images, train_labels = train["image"] *norm + normBias, train["label"]
+    test_images, test_labels = test["image"] *norm + normBias, test["label"]
+
+
 
     print("train_images: ", type(train_images), np.shape(train_images))
     print("train_labels: ", type(train_labels), np.shape(train_labels))
@@ -44,7 +47,7 @@ def parse_data():
 
 
 
-    # creates a 600000 x 784 matrix for train images
+    # creates a 60000 x 784 matrix for train images
     for i in range (0, 60000):
         list = []
         for j in range (0, 28):
@@ -53,7 +56,10 @@ def parse_data():
             list.append(horz)
         train_images_stack[i, :] = np.hstack(list)
 
-    # creates a 100000 x 784 matrix for test images
+
+
+    # creates a 10000 x 784 matrix for test images
+
     for i in range(0, 10000):
         list = []
         for j in range(0, 28):
@@ -62,6 +68,15 @@ def parse_data():
             list.append(horz)
         test_images_stack[i, :] = np.hstack(list)
 
+
+    """ 
+    debug
+    var = np.zeros((5, 784))
+    var[0:5, :] = np.reshape(test_images_stack[0, :], (1, 784))
+    im = plt.imshow(var)
+    plt.show()
+    """
+
     # creates a 60000 x 10 matrix for test labels
     for i in range(0, 60000):
         # given a number num, 0 - 9, place a 1 at index num in an array of size 10
@@ -69,9 +84,8 @@ def parse_data():
         num = train_labels[i]
         train_labels_stack[i, num] = 1
 
-    print(train_labels_stack[0:5, :])
 
-    # creates a 60000 x 10 matrix for test labels
+    # creates a 10000 x 10 matrix for test labels
     for i in range(0, 10000):
         # given a number num, 0 - 9, place a 1 at index num in an array of size 10
         # i.e. if num = 5, [0 0 0 0 0 1 0 0 0 0]
